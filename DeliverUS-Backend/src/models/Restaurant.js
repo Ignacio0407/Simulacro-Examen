@@ -27,6 +27,9 @@ const loadModel = (sequelize, DataTypes) => {
     }
   }
   Restaurant.init({
+    isPromoted: {
+      type: DataTypes.BOOLEAN
+    },
     name: {
       allowNull: false,
       type: DataTypes.STRING

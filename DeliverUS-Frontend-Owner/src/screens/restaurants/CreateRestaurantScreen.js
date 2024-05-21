@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Image, Platform, Pressable, ScrollView, StyleSheet, View, Switch } from 'react-native'
 import * as ExpoImagePicker from 'expo-image-picker'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as yup from 'yup'
@@ -18,6 +18,7 @@ export default function CreateRestaurantScreen ({ navigation }) {
   const [open, setOpen] = useState(false)
   const [restaurantCategories, setRestaurantCategories] = useState([])
   const [backendErrors, setBackendErrors] = useState()
+  const [anotherRestaurantPromoted, setAnotherRestaurantPromoted] = useState(false)
 
   const initialRestaurantValues = { name: null, description: null, address: null, postalCode: null, url: null, shippingCosts: null, email: null, phone: null, restaurantCategoryId: null }
   const validationSchema = yup.object().shape({
@@ -56,26 +57,28 @@ export default function CreateRestaurantScreen ({ navigation }) {
       .required('Restaurant category is required')
   })
 
-  useEffect(() => {
-    async function fetchRestaurantCategories () {
-      try {
-        const fetchedRestaurantCategories = await getRestaurantCategories()
-        const fetchedRestaurantCategoriesReshaped = fetchedRestaurantCategories.map((e) => {
-          return {
-            label: e.name,
-            value: e.id
-          }
-        })
-        setRestaurantCategories(fetchedRestaurantCategoriesReshaped)
-      } catch (error) {
-        showMessage({
-          message: `There was an error while retrieving restaurant categories. ${error} `,
-          type: 'error',
-          style: GlobalStyles.flashStyle,
-          titleStyle: GlobalStyles.flashTextStyle
-        })
-      }
+  async function fetchRestaurantCategories () {
+    try {
+      const fetchedRestaurantCategories = await getRestaurantCategories()
+      const fetchedRestaurantCategoriesReshaped = fetchedRestaurantCategories.map((e) => {
+        return {
+          label: e.name,
+          value: e.id
+        }
+      })
+      setRestaurantCategories(fetchedRestaurantCategoriesReshaped)
+    } catch (error) {
+      showMessage({
+        message: `There was an error while retrieving restaurant categories. ${error} `,
+        type: 'error',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
     }
+  }
+
+  useEffect(() => {
+    
     fetchRestaurantCategories()
   }, [])
 
@@ -203,6 +206,15 @@ export default function CreateRestaurantScreen ({ navigation }) {
                 <TextRegular>Hero image: </TextRegular>
                 <Image style={styles.image} source={values.heroImage ? { uri: values.heroImage.assets[0].uri } : restaurantBackground} />
               </Pressable>
+
+              <Text style={{ fontSize: 18 }}>Is it promoted?</Text>
+                <Switch
+                  trackColor={{ false: "#767577", true: "#81b0ff" }}
+                  thumbColor={isEnabled ? "#f5dd4b" : "#f4f3f4"}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={toggleSwitch}
+                  value={isEnabled}
+                />
 
               {backendErrors &&
                 backendErrors.map((error, index) => <TextError key={index}>{error.param}-{error.msg}</TextError>)

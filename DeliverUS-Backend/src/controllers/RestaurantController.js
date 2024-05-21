@@ -1,5 +1,36 @@
 import { Restaurant, Product, RestaurantCategory, ProductCategory } from '../models/models.js'
 
+// Esto es para update, cuando se 
+const promote = async function (req, res) {
+  try {
+    transaction = await sequelizeSession.transaction()
+  } catch (error) {
+    res.status(500).send(error)
+  }
+  try {
+    const restaurantId = req.params.restaurantId
+    const ownerId = req.params.ownerId
+    
+    // Despromocionar el restaurante que ya estaba promocionado
+    await Restaurant.update(
+      {promoted: false}, 
+      {where: {ownerId: ownerId, promoted: true}, transaction: transaction}
+    )
+    // Promocionar el nuevo restaurante
+    await Restaurant.update(
+      {promoted: true},
+      {where: {restaurantId: restaurantId, transaction: transaction}}
+    )
+    
+    await transaction.commit()
+    res.status(200).send({message: 'Succesfully promoted restaurante ' + req.params.restaurant.name})
+
+  } catch (error) {
+    await transaction.rollback()
+    res.status(500).send(error)
+  }
+}
+
 const index = async function (req, res) {
   try {
     const restaurants = await Restaurant.findAll(
@@ -96,6 +127,7 @@ const destroy = async function (req, res) {
 }
 
 const RestaurantController = {
+  promote,
   index,
   indexOwner,
   create,

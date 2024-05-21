@@ -10,6 +10,16 @@ import { handleFilesUpload } from '../middlewares/FileHandlerMiddleware.js'
 import { Restaurant } from '../models/models.js'
 
 const loadFileRoutes = function (app) {
+  
+  app.route('restaurants/promoted')
+    .patch(
+      isLoggedIn,
+      hasRole('owner'),
+      checkEntityExists(Restaurant, 'restaurantId'),
+      RestaurantMiddleware.checkRestaurantOwnership,
+      RestaurantController.promote
+    )
+  
   app.route('/restaurants')
     .get(
       RestaurantController.index)
