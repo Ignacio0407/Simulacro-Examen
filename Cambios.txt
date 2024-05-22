@@ -1,0 +1,83 @@
+Restaurant:
+isPromoted: {
+      type: DataTypes.BOOLEAN
+    },
+
+RestaurantRoutes:
+app.route('restaurants/promoted')
+    .patch(
+      isLoggedIn,
+      hasRole('owner'),
+      checkEntityExists(Restaurant, 'restaurantId'),
+      RestaurantMiddleware.checkRestaurantOwnership,
+      RestaurantController.promote
+    )
+
+RestaurantController:
+// Esto es para update, cuando se 
+const promote = async function (req, res) {
+  try {
+    transaction = await sequelizeSession.transaction()
+  } catch (error) {
+    res.status(500).send(error)
+  }
+  try {
+    const restaurantId = req.params.restaurantId
+    const ownerId = req.params.ownerId
+    
+    // Despromocionar el restaurante que ya estaba promocionado
+    await Restaurant.update(
+      {promoted: false}, 
+      {where: {ownerId: ownerId, promoted: true}, transaction: transaction}
+    )
+    // Promocionar el nuevo restaurante
+    await Restaurant.update(
+      {promoted: true},
+      {where: {restaurantId: restaurantId, transaction: transaction}}
+    )
+    
+    await transaction.commit()
+    res.status(200).send({message: 'Succesfully promoted restaurante ' + req.params.restaurant.name})
+
+  } catch (error) {
+    await transaction.rollback()
+    res.status(500).send(error)
+  }
+}
+
+CreateRestaurant:
+  const [anotherRestaurantPromoted, setAnotherRestaurantPromoted] = useState(false)
+  const createRestaurant = async (values) => {
+    setBackendErrors([])
+    if (anotherRestaurantPromoted && values.isPromoted) {
+      showMessage({
+        message: 'promoted-You can only promote one restaurant at a time',
+        type: 'success',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
+  EN EL FORMIK:
+  <Text style={{ fontSize: 18 }}>Is it promoted?</Text>
+                <Switch
+                  trackColor={{ false: "#767577", true: "#81b0ff" }}
+                  thumbColor={isEnabled ? "#f5dd4b" : "#f4f3f4"}
+                  ios_backgroundColor="#3e3e3e"
+                  onValueChange={value => setFieldValue('isPromoted', value)}
+                  value={values.isPromoted}
+                />
+              {(anotherRestaurantPromoted && values.isPromoted) && (
+                <TextError> promoted-You can only promote one restaurant at a time </TextError>
+              )}
+
+Restaurants:
+  const fetchRestaurants = async () => {
+    try {
+      const fetchedRestaurants = await getAll()
+      setRestaurants(fetchedRestaurants)
+      const promotedRes = fetchedRestaurants.filter(res => res.isPromoted)
+      if (promotedRes.lenght === 1) {
+        setAnotherRestaurantPromoted(true)
+      }
+  
+  

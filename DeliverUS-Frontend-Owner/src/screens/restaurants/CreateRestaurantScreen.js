@@ -4,7 +4,7 @@ import * as ExpoImagePicker from 'expo-image-picker'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as yup from 'yup'
 import DropDownPicker from 'react-native-dropdown-picker'
-import { create, getRestaurantCategories } from '../../api/RestaurantEndpoints'
+import { create, getAll, getRestaurantCategories } from '../../api/RestaurantEndpoints'
 import InputItem from '../../components/InputItem'
 import TextRegular from '../../components/TextRegular'
 import * as GlobalStyles from '../../styles/GlobalStyles'
@@ -77,8 +77,25 @@ export default function CreateRestaurantScreen ({ navigation }) {
     }
   }
 
+  const fetchPromotedRestaurant = async () => {
+    try {
+      const fetchedRestaurants = await getAll()
+      const promoted = fetchedRestaurants.filter(res => res.promoted)
+      if (promoted.length === 1) {
+        setAnotherRestaurantPromoted(true)
+      }
+    } catch (error) {
+      showMessage({
+        message: `There was an error while retrieving restaurant categories. ${error} `,
+        type: 'error',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
+  }
+
   useEffect(() => {
-    
+    fetchPromotedRestaurant()
     fetchRestaurantCategories()
   }, [])
 
@@ -109,6 +126,14 @@ export default function CreateRestaurantScreen ({ navigation }) {
 
   const createRestaurant = async (values) => {
     setBackendErrors([])
+    if (anotherRestaurantPromoted && values.isPromoted) {
+      showMessage({
+        message: 'promoted-You can only promote one restaurant at a time',
+        type: 'success',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
     try {
       const createdRestaurant = await create(values)
       showMessage({
@@ -123,6 +148,7 @@ export default function CreateRestaurantScreen ({ navigation }) {
       setBackendErrors(error.errors)
     }
   }
+
   return (
     <Formik
       validationSchema={validationSchema}
@@ -212,9 +238,12 @@ export default function CreateRestaurantScreen ({ navigation }) {
                   trackColor={{ false: "#767577", true: "#81b0ff" }}
                   thumbColor={isEnabled ? "#f5dd4b" : "#f4f3f4"}
                   ios_backgroundColor="#3e3e3e"
-                  onValueChange={toggleSwitch}
-                  value={isEnabled}
+                  onValueChange={value => setFieldValue('isPromoted', value)}
+                  value={values.isPromoted}
                 />
+              {(anotherRestaurantPromoted && values.isPromoted) && (
+                <TextError> promoted-You can only promote one restaurant at a time </TextError>
+              )}
 
               {backendErrors &&
                 backendErrors.map((error, index) => <TextError key={index}>{error.param}-{error.msg}</TextError>)

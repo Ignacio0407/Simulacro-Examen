@@ -17,6 +17,8 @@ export default function RestaurantsScreen ({ navigation, route }) {
   const [restaurants, setRestaurants] = useState([])
   const [restaurantToBeDeleted, setRestaurantToBeDeleted] = useState(null)
   const { loggedInUser } = useContext(AuthorizationContext)
+  const [anotherRestaurantPromoted, setAnotherRestaurantPromoted] = useState(false)
+  const [thisRestaurantPromoted, setThisRestaurantPromoted] = useState(false)
 
   useEffect(() => {
     if (loggedInUser) {
@@ -26,23 +28,57 @@ export default function RestaurantsScreen ({ navigation, route }) {
     }
   }, [loggedInUser, route])
 
-  const renderRestaurant = ({ item }) => {
+  const fetchRestaurants = async () => {
+    try {
+      const fetchedRestaurants = await getAll()
+      setRestaurants(fetchedRestaurants)
+      const promotedRes = fetchedRestaurants.filter(res => res.isPromoted)
+      if (promotedRes.lenght === 1) {
+        setAnotherRestaurantPromoted(true)
+      }
+    } catch (error) {
+      showMessage({
+        message: `There was an error while retrieving restaurants. ${error} `,
+        type: 'error',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
+  }
+
+  const handlePromote = () => {
+    try {
+      if (anotherRestaurantPromoted) {
+        setAnotherRestaurantPromoted(false)
+      }
+      setThisRestaurantPromoted(true)
+    } catch (error) {
+      showMessage({
+        message: `There was an error while promoting this restaurant. ${error} `,
+        type: 'error',
+        style: GlobalStyles.flashStyle,
+        titleStyle: GlobalStyles.flashTextStyle
+      })
+    }
+  }
+
+  const renderRestaurant = ({ item: restaurant }) => {
     return (
       <ImageCard
-        imageUri={item.logo ? { uri: process.env.API_BASE_URL + '/' + item.logo } : restaurantLogo}
-        title={item.name}
+        imageUri={restaurant.logo ? { uri: process.env.API_BASE_URL + '/' + restaurant.logo } : restaurantLogo}
+        title={restaurant.name}
         onPress={() => {
-          navigation.navigate('RestaurantDetailScreen', { id: item.id })
+          navigation.navigate('RestaurantDetailScreen', { id: restaurant.id })
         }}
       >
-        <TextRegular numberOfLines={2}>{item.description}</TextRegular>
-        {item.averageServiceMinutes !== null &&
-          <TextSemiBold>Avg. service time: <TextSemiBold textStyle={{ color: GlobalStyles.brandPrimary }}>{item.averageServiceMinutes} min.</TextSemiBold></TextSemiBold>
+        <TextRegular numberOfLines={2}>{restaurant.description}</TextRegular>
+        {restaurant.averageServiceMinutes !== null &&
+          <TextSemiBold>Avg. service time: <TextSemiBold textStyle={{ color: GlobalStyles.brandPrimary }}>{restaurant.averageServiceMinutes} min.</TextSemiBold></TextSemiBold>
         }
-        <TextSemiBold>Shipping: <TextSemiBold textStyle={{ color: GlobalStyles.brandPrimary }}>{item.shippingCosts.toFixed(2)}€</TextSemiBold></TextSemiBold>
+        <TextSemiBold>Shipping: <TextSemiBold textStyle={{ color: GlobalStyles.brandPrimary }}>{restaurant.shippingCosts.toFixed(2)}€</TextSemiBold></TextSemiBold>
         <View style={styles.actionButtonsContainer}>
           <Pressable
-            onPress={() => navigation.navigate('EditRestaurantScreen', { id: item.id })
+            onPress={() => navigation.navigate('EditRestaurantScreen', { id: restaurant.id })
             }
             style={({ pressed }) => [
               {
@@ -61,7 +97,7 @@ export default function RestaurantsScreen ({ navigation, route }) {
         </Pressable>
 
         <Pressable
-            onPress={() => { setRestaurantToBeDeleted(item) }}
+            onPress={() => { setRestaurantToBeDeleted(restaurant) }}
             style={({ pressed }) => [
               {
                 backgroundColor: pressed
@@ -74,6 +110,24 @@ export default function RestaurantsScreen ({ navigation, route }) {
             <MaterialCommunityIcons name='delete' color={'white'} size={20}/>
             <TextRegular textStyle={styles.text}>
               Delete
+            </TextRegular>
+          </View>
+        </Pressable>
+
+        <Pressable
+            onPress={() => { handlePromote(restaurant) }}
+            style={({ pressed }) => [
+              {
+                backgroundColor: pressed
+                  ? GlobalStyles.brandPrimaryTap
+                  : GlobalStyles.brandPrimary
+              },
+              styles.actionButton
+            ]}>
+          <View style={[{ flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
+            <MaterialCommunityIcons name='delete' color={'white'} size={20}/>
+            <TextRegular textStyle={styles.text}>
+              Promote
             </TextRegular>
           </View>
         </Pressable>
@@ -115,19 +169,6 @@ export default function RestaurantsScreen ({ navigation, route }) {
     }
     </>
     )
-  }
-  const fetchRestaurants = async () => {
-    try {
-      const fetchedRestaurants = await getAll()
-      setRestaurants(fetchedRestaurants)
-    } catch (error) {
-      showMessage({
-        message: `There was an error while retrieving restaurants. ${error} `,
-        type: 'error',
-        style: GlobalStyles.flashStyle,
-        titleStyle: GlobalStyles.flashTextStyle
-      })
-    }
   }
 
   const removeRestaurant = async (restaurant) => {
